@@ -12,15 +12,18 @@ app = FastAPI(
     debug=settings.debug
 )
 
-# CORS using settings
+
+# ── CORS Middleware ─────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.allowed_origins],
+    allow_origins=settings.origins_list,   # list from .env
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],                   # GET, POST, PUT, DELETE etc
+    allow_headers=["*"],                   # Authorization, Content-Type etc
 )
 
+
+# ── Routes ─────────────────────────────────────────
 @app.get("/")
 async def read_root():
     return {
@@ -35,6 +38,8 @@ async def call_external_api():
         response = await client.get("https://jsonplaceholder.typicode.com/todos/1")
         return response.json()
 
+
+# ── Routers ────────────────────────────────────────
 app.include_router(products.router, prefix="/products", tags=["Products"])
 app.include_router(users.router, prefix="/users", tags=["Users"])
 app.include_router(orders.router, prefix="/orders", tags=["Orders"])
