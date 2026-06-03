@@ -1,12 +1,4 @@
-from pydantic import BaseModel, Field
-from typing import Optional
+# app/models.py
 
-
-
-class Product(BaseModel):
-    name: str
-    price: float = Field(gt=0, description="Must be greater than 0")
-    description: Optional[str] = None
-    in_stock: bool = True
-    quantity: int = Field(ge=0, description="Must be 0 or more")
-    category: str = Field(default="general")
+# Models are now in app/schemas/
+# This file will hold SQLAlchemy database models in Phase 2
