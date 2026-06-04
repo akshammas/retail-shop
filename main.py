@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.routers import products, users, orders
 from app.core.config import settings
 from app.dependencies import verify_api_key,Depends,verify_api_key,get_settings
+from app.core.security import create_access_token, verify_token
 
 
 app = FastAPI(
@@ -32,6 +33,18 @@ async def get_stats():
         "total_orders": 0
     }
 
+@app.get("/token-test")
+async def token_test():
+    # create a token
+    token = create_access_token(data={"user_id": 1, "role": "customer"})
+
+    # verify it immediately
+    payload = verify_token(token)
+
+    return {
+        "token": token,
+        "decoded": payload
+    }
 
 # ── Routes ─────────────────────────────────────────
 @app.get("/")

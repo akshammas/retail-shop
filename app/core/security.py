@@ -1,16 +1,44 @@
 # app/core/security.py
 
-from passlib.context import CryptContext
+import bcrypt
+from datetime import datetime, timedelta
+from jose import JWTError, jwt
+from app.core.config import settings
 
-# bcrypt is the hashing algorithm
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-
+# ── Password hashing ────────────────────────────────
 def hash_password(password: str) -> str:
-    """Convert plain password to hashed version"""
-    return pwd_context.hash(password)
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password.encode("utf-8"), salt)
+    return hashed.decode("utf-8")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Check if plain password matches the hash"""
-    return pwd_context.verify(plain_password, hashed_password)
+    return bcrypt.checkpw(
+        plain_password.encode("utf-8"),
+        hashed_password.encode("utf-8")
+    )
+
+
+# ── Token creation ──────────────────────────────────
+def create_access_token(data: dict) -> str:
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(minutes=settings.access_token_expire_minutes)
+    to_encode.update({"exp": expire, "type": "access"})
+    return jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
+
+
+def create_refresh_token(data: dict) -> str:
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(days=settings.refresh_token_expire_days)
+    to_encode.update({"exp": expire, "type": "refresh"})
+    return jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
+
+
+# ── Token verification ──────────────────────────────
+def verify_token(token: str) -> dict:
+    try:
+        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+        return payload
+    except JWTError:
+        return None
