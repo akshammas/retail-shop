@@ -1,13 +1,13 @@
 # main.py
 
 import httpx
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import products, users, orders
+from app.routers import auth
 from app.core.config import settings
-from app.dependencies import verify_api_key,Depends,verify_api_key,get_settings
 from app.core.security import create_access_token, verify_token
-
+from app.dependencies import verify_api_key
 
 app = FastAPI(
     title=settings.app_name,
@@ -15,40 +15,16 @@ app = FastAPI(
     debug=settings.debug
 )
 
-
-# ── CORS Middleware ─────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.origins_list,   # list from .env
+    allow_origins=settings.origins_list,
     allow_credentials=True,
-    allow_methods=["*"],                   # GET, POST, PUT, DELETE etc
-    allow_headers=["*"],                   # Authorization, Content-Type etc
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-@app.get("/admin/stats", dependencies=[Depends(verify_api_key)])
-async def get_stats():
-    return {
-        "total_products": 3,
-        "total_users": 0,
-        "total_orders": 0
-    }
-
-@app.get("/token-test")
-async def token_test():
-    # create a token
-    token = create_access_token(data={"user_id": 1, "role": "customer"})
-
-    # verify it immediately
-    payload = verify_token(token)
-
-    return {
-        "token": token,
-        "decoded": payload
-    }
-
-# ── Routes ─────────────────────────────────────────
 @app.get("/")
-async def read_root(settings=Depends(get_settings)):
+async def read_root():
     return {
         "message": f"Welcome to {settings.app_name}",
         "version": settings.app_version,
@@ -61,8 +37,22 @@ async def call_external_api():
         response = await client.get("https://jsonplaceholder.typicode.com/todos/1")
         return response.json()
 
+@app.get("/token-test")
+async def token_test():
+    token = create_access_token(data={"user_id": 1, "role": "customer"})
+    payload = verify_token(token)
+    return {"token": token, "decoded": payload}
 
-# ── Routers ────────────────────────────────────────
+@app.get("/admin/stats", dependencies=[Depends(verify_api_key)])
+async def get_stats():
+    return {
+        "total_products": 3,
+        "total_users": len(auth.fake_users_db),
+        "total_orders": 0
+    }
+
+# routers
+app.include_router(auth.router, prefix="/auth", tags=["Auth"])
 app.include_router(products.router, prefix="/products", tags=["Products"])
 app.include_router(users.router, prefix="/users", tags=["Users"])
 app.include_router(orders.router, prefix="/orders", tags=["Orders"])
