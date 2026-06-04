@@ -1,4 +1,4 @@
-# app/routers/products.py
+# app/routers/products.py — add Depends to write routes
 
 from fastapi import APIRouter, HTTPException, status, Depends
 from app.schemas.product import Product, ProductResponse
@@ -15,6 +15,11 @@ fake_db = {
 next_id = 4
 
 
+def get_current_user_dep():
+    from app.dependencies import get_current_user
+    return get_current_user
+
+
 @router.get("/featured")
 async def get_featured():
     return {"message": "These are featured products"}
@@ -23,13 +28,11 @@ async def get_featured():
 @router.get("/", response_model=list[ProductResponse])
 async def list_products(
     category: str = None,
-    pagination: dict = Depends(get_pagination)  # injected here
+    pagination: dict = Depends(get_pagination)
 ):
     products = list(fake_db.values())
     if category:
         products = [p for p in products if p["category"] == category]
-
-    # apply pagination
     skip = pagination["skip"]
     limit = pagination["limit"]
     return products[skip: skip + limit]
@@ -42,8 +45,12 @@ async def get_product(product_id: int):
     return fake_db[product_id]
 
 
+# protected — must be logged in
 @router.post("/", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
-async def create_product(product: Product):
+async def create_product(
+    product: Product,
+    current_user: dict = Depends(get_current_user_dep())
+):
     global next_id
     new_product = {"id": next_id, **product.dict()}
     fake_db[next_id] = new_product
@@ -52,7 +59,11 @@ async def create_product(product: Product):
 
 
 @router.put("/{id}", response_model=ProductResponse)
-async def update_product(id: int, product: Product):
+async def update_product(
+    id: int,
+    product: Product,
+    current_user: dict = Depends(get_current_user_dep())
+):
     if id not in fake_db:
         raise HTTPException(status_code=404, detail="Product not found")
     updated = {"id": id, **product.dict()}
@@ -61,7 +72,10 @@ async def update_product(id: int, product: Product):
 
 
 @router.delete("/{id}")
-async def delete_product(id: int):
+async def delete_product(
+    id: int,
+    current_user: dict = Depends(get_current_user_dep())
+):
     if id not in fake_db:
         raise HTTPException(status_code=404, detail="Product not found")
     deleted = fake_db.pop(id)
