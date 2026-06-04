@@ -5,6 +5,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import products, users, orders
 from app.core.config import settings
+from app.dependencies import verify_api_key,Depends,verify_api_key,get_settings
+
 
 app = FastAPI(
     title=settings.app_name,
@@ -22,10 +24,18 @@ app.add_middleware(
     allow_headers=["*"],                   # Authorization, Content-Type etc
 )
 
+@app.get("/admin/stats", dependencies=[Depends(verify_api_key)])
+async def get_stats():
+    return {
+        "total_products": 3,
+        "total_users": 0,
+        "total_orders": 0
+    }
+
 
 # ── Routes ─────────────────────────────────────────
 @app.get("/")
-async def read_root():
+async def read_root(settings=Depends(get_settings)):
     return {
         "message": f"Welcome to {settings.app_name}",
         "version": settings.app_version,

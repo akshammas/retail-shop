@@ -1,7 +1,8 @@
 # app/routers/products.py
 
-from fastapi import APIRouter, HTTPException, status
-from app.schemas.product import Product, ProductResponse  # updated import
+from fastapi import APIRouter, HTTPException, status, Depends
+from app.schemas.product import Product, ProductResponse
+from app.dependencies import get_pagination
 
 router = APIRouter()
 
@@ -20,11 +21,18 @@ async def get_featured():
 
 
 @router.get("/", response_model=list[ProductResponse])
-async def list_products(category: str = None, limit: int = 10):
+async def list_products(
+    category: str = None,
+    pagination: dict = Depends(get_pagination)  # injected here
+):
     products = list(fake_db.values())
     if category:
         products = [p for p in products if p["category"] == category]
-    return products[:limit]
+
+    # apply pagination
+    skip = pagination["skip"]
+    limit = pagination["limit"]
+    return products[skip: skip + limit]
 
 
 @router.get("/{product_id}", response_model=ProductResponse)
