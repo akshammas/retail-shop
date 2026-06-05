@@ -7,7 +7,8 @@ from app.routers import products, users, orders
 from app.routers import auth
 from app.core.config import settings
 from app.core.security import create_access_token, verify_token
-from app.dependencies import verify_api_key
+from app.dependencies import require_admin
+from app.database import fake_users_db, fake_products_db
 
 app = FastAPI(
     title=settings.app_name,
@@ -43,15 +44,18 @@ async def token_test():
     payload = verify_token(token)
     return {"token": token, "decoded": payload}
 
-@app.get("/admin/stats", dependencies=[Depends(verify_api_key)])
-async def get_stats():
+
+# ── admin only — no API key needed anymore ──────────
+@app.get("/admin/stats")
+async def get_stats(admin_user: dict = Depends(require_admin)):
     return {
-        "total_products": 3,
-        "total_users": len(auth.fake_users_db),
-        "total_orders": 0
+        "total_products": len(fake_products_db),
+        "total_users": len(fake_users_db),
+        "total_orders": 0,
+        "requested_by": admin_user["email"]
     }
 
-# routers
+
 app.include_router(auth.router, prefix="/auth", tags=["Auth"])
 app.include_router(products.router, prefix="/products", tags=["Products"])
 app.include_router(users.router, prefix="/users", tags=["Users"])

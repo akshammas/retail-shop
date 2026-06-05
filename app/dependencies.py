@@ -4,7 +4,7 @@ from fastapi import Depends, HTTPException, Header, status
 from fastapi.security import OAuth2PasswordBearer
 from app.core.config import settings
 from app.core.security import verify_token
-from app.database import fake_users_db  # from database.py now
+from app.database import fake_users_db
 
 
 def get_pagination(skip: int = 0, limit: int = 10):
@@ -47,3 +47,13 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
         raise credentials_exception
 
     return user
+
+
+# ── Admin dependency ────────────────────────────────
+def require_admin(current_user: dict = Depends(get_current_user)):
+    if current_user["role"] != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+    return current_user
