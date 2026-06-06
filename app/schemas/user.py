@@ -1,6 +1,6 @@
 # app/schemas/user.py
 
-from pydantic import BaseModel
+from pydantic import BaseModel,ConfigDict
 from typing import Optional
 
 
@@ -16,14 +16,13 @@ class UserLogin(BaseModel):
 
 
 class UserResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     id: int
     name: str
     email: str
     role: str = "customer"
 
-    class Config:
-        from_attributes = True
-
+   
 
 class TokenResponse(BaseModel):
     access_token: str

@@ -41,7 +41,7 @@ async def create_product(
     current_user: dict = Depends(get_current_user)
 ):
     global next_id
-    new_product = {"id": next_id, **product.dict()}
+    new_product = {"id": next_id, **product.model_dump()}
     fake_products_db[next_id] = new_product
     next_id += 1
     return new_product
@@ -56,7 +56,7 @@ async def update_product(
 ):
     if id not in fake_products_db:
         raise HTTPException(status_code=404, detail="Product not found")
-    updated = {"id": id, **product.dict()}
+    updated = {"id": id, **product.model_dump()}
     fake_products_db[id] = updated
     return updated
 
