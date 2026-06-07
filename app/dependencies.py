@@ -13,14 +13,6 @@ def get_pagination(skip: int = 0, limit: int = 10):
     return {"skip": skip, "limit": limit}
 
 
-def get_settings():
-    return settings
-
-
-def verify_api_key(x_api_key: str = Header(...)):
-    if x_api_key != settings.secret_key:
-        raise HTTPException(status_code=403, detail="Invalid API key")
-    return x_api_key
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
