@@ -170,3 +170,104 @@ def test_create_product_invalid_price(client, admin_token):
         headers={"Authorization": f"Bearer {admin_token}"}
     )
     assert response.status_code == 422
+
+
+# tests/test_products.py — add these
+
+
+def test_search_no_results(client):
+    response = client.get("/products/?search=xyznotexist")
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_update_product_not_found(client, admin_token):
+    response = client.put(
+        "/products/999",
+        json={"name": "Ghost Product"},
+        headers={"Authorization": f"Bearer {admin_token}"}
+    )
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Product not found"
+
+
+def test_delete_product_not_found(client, admin_token):
+    response = client.delete(
+        "/products/999",
+        headers={"Authorization": f"Bearer {admin_token}"}
+    )
+    assert response.status_code == 404
+
+
+def test_create_product_missing_required_fields(client, admin_token):
+    # missing name and price
+    response = client.post(
+        "/products/",
+        json={
+            "description": "No name or price"
+        },
+        headers={"Authorization": f"Bearer {admin_token}"}
+    )
+    assert response.status_code == 422
+
+
+def test_partial_update_only_price(client, admin_token):
+    # update only price — name should stay the same
+    response = client.put(
+        "/products/1",
+        json={"price": 299.99},
+        headers={"Authorization": f"Bearer {admin_token}"}
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["price"] == 299.99
+    assert data["name"] == "T-shirt"  # unchanged
+
+
+def test_partial_update_only_stock(client, admin_token):
+    response = client.put(
+        "/products/1",
+        json={"in_stock": False},
+        headers={"Authorization": f"Bearer {admin_token}"}
+    )
+    assert response.status_code == 200
+    assert response.json()["in_stock"] == False
+
+
+def test_filter_out_of_stock(client, admin_token):
+    # first mark product 1 as out of stock
+    client.put(
+        "/products/1",
+        json={"in_stock": False},
+        headers={"Authorization": f"Bearer {admin_token}"}
+    )
+    # filter in_stock=false
+    response = client.get("/products/?in_stock=false")
+    assert response.status_code == 200
+    data = response.json()
+    assert all(p["in_stock"] == False for p in data)
+
+
+def test_admin_all_includes_out_of_stock(client, admin_token):
+    # mark one as out of stock
+    client.put(
+        "/products/1",
+        json={"in_stock": False},
+        headers={"Authorization": f"Bearer {admin_token}"}
+    )
+    # admin all should still show it
+    response = client.get(
+        "/products/admin/all",
+        headers={"Authorization": f"Bearer {admin_token}"}
+    )
+    assert response.status_code == 200
+    ids = [p["id"] for p in response.json()]
+    assert 1 in ids
+
+
+def test_admin_all_as_customer(client, customer_token):
+    response = client.get(
+        "/products/admin/all",
+        headers={"Authorization": f"Bearer {customer_token}"}
+    )
+    assert response.status_code == 403
