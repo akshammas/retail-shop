@@ -24,6 +24,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.get("/")
 async def read_root():
     return {
@@ -32,20 +33,7 @@ async def read_root():
         "debug": settings.debug
     }
 
-@app.get("/external-test")
-async def call_external_api():
-    async with httpx.AsyncClient() as client:
-        response = await client.get("https://jsonplaceholder.typicode.com/todos/1")
-        return response.json()
 
-@app.get("/token-test")
-async def token_test():
-    token = create_access_token(data={"user_id": 1, "role": "customer"})
-    payload = verify_token(token)
-    return {"token": token, "decoded": payload}
-
-
-# ── admin only — no API key needed anymore ──────────
 @app.get("/admin/stats")
 async def get_stats(admin_user: dict = Depends(require_admin)):
     return {
