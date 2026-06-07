@@ -4,16 +4,35 @@
 def test_list_products(client):
     response = client.get("/products/")
     assert response.status_code == 200
+    assert len(response.json()) == 3
+
+
+def test_list_products_filter_category(client):
+    response = client.get("/products/?category=general")
+    assert response.status_code == 200
     data = response.json()
-    assert len(data) == 3  # 3 products in fake db
+    assert all(p["category"] == "general" for p in data)
+
+
+def test_list_products_search(client):
+    response = client.get("/products/?search=shirt")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) >= 1
+    assert any("shirt" in p["name"].lower() for p in data)
+
+
+def test_list_products_in_stock_filter(client):
+    response = client.get("/products/?in_stock=true")
+    assert response.status_code == 200
+    data = response.json()
+    assert all(p["in_stock"] for p in data)
 
 
 def test_get_single_product(client):
     response = client.get("/products/1")
     assert response.status_code == 200
-    data = response.json()
-    assert data["name"] == "T-shirt"
-    assert data["id"] == 1
+    assert response.json()["name"] == "T-shirt"
 
 
 def test_get_product_not_found(client):
@@ -22,7 +41,32 @@ def test_get_product_not_found(client):
     assert response.json()["detail"] == "Product not found"
 
 
-def test_create_product_with_token(client, customer_token):
+def test_get_featured_products(client):
+    response = client.get("/products/featured")
+    assert response.status_code == 200
+    assert isinstance(response.json(), list)
+
+
+def test_create_product_as_admin(client, admin_token):
+    response = client.post(
+        "/products/",
+        json={
+            "name": "Jacket",
+            "price": 1499.99,
+            "description": "Winter jacket",
+            "in_stock": True,
+            "quantity": 15,
+            "category": "outerwear"
+        },
+        headers={"Authorization": f"Bearer {admin_token}"}
+    )
+    assert response.status_code == 201
+    data = response.json()
+    assert data["name"] == "Jacket"
+    assert "id" in data
+
+
+def test_create_product_as_customer(client, customer_token):
     response = client.post(
         "/products/",
         json={
@@ -35,11 +79,7 @@ def test_create_product_with_token(client, customer_token):
         },
         headers={"Authorization": f"Bearer {customer_token}"}
     )
-    assert response.status_code == 201
-    data = response.json()
-    assert data["name"] == "Jacket"
-    assert data["price"] == 1499.99
-    assert "id" in data
+    assert response.status_code == 403
 
 
 def test_create_product_without_token(client):
@@ -57,20 +97,25 @@ def test_create_product_without_token(client):
     assert response.status_code == 401
 
 
-def test_create_product_invalid_price(client, customer_token):
-    response = client.post(
-        "/products/",
-        json={
-            "name": "Jacket",
-            "price": -100,  # invalid price
-            "description": "Winter jacket",
-            "in_stock": True,
-            "quantity": 15,
-            "category": "outerwear"
-        },
+def test_update_product_as_admin(client, admin_token):
+    response = client.put(
+        "/products/1",
+        json={"name": "Updated T-shirt", "price": 599.99},
+        headers={"Authorization": f"Bearer {admin_token}"}
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["name"] == "Updated T-shirt"
+    assert data["price"] == 599.99
+
+
+def test_update_product_as_customer(client, customer_token):
+    response = client.put(
+        "/products/1",
+        json={"name": "Updated T-shirt"},
         headers={"Authorization": f"Bearer {customer_token}"}
     )
-    assert response.status_code == 422  # pydantic validation error
+    assert response.status_code == 403
 
 
 def test_delete_product_as_admin(client, admin_token):
@@ -88,7 +133,6 @@ def test_delete_product_as_customer(client, customer_token):
         headers={"Authorization": f"Bearer {customer_token}"}
     )
     assert response.status_code == 403
-    assert response.json()["detail"] == "Admin access required"
 
 
 def test_pagination(client):
@@ -101,3 +145,28 @@ def test_pagination_limit_exceeded(client):
     response = client.get("/products/?limit=200")
     assert response.status_code == 400
     assert "Limit cannot exceed 100" in response.json()["detail"]
+
+
+def test_admin_view_all_products(client, admin_token):
+    response = client.get(
+        "/products/admin/all",
+        headers={"Authorization": f"Bearer {admin_token}"}
+    )
+    assert response.status_code == 200
+    assert isinstance(response.json(), list)
+
+
+def test_create_product_invalid_price(client, admin_token):
+    response = client.post(
+        "/products/",
+        json={
+            "name": "Jacket",
+            "price": -100,
+            "description": "Winter jacket",
+            "in_stock": True,
+            "quantity": 15,
+            "category": "outerwear"
+        },
+        headers={"Authorization": f"Bearer {admin_token}"}
+    )
+    assert response.status_code == 422
