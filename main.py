@@ -1,6 +1,5 @@
 # main.py
 
-import httpx
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import products, users, orders
@@ -9,8 +8,8 @@ from app.core.config import settings
 from app.dependencies import require_admin
 from app.db.database import get_db
 from app.db.crud.user import get_all_users
+from app.db.crud.product import get_all_products
 from sqlalchemy.orm import Session
-from app.database import fake_products_db
 
 app = FastAPI(
     title=settings.app_name,
@@ -42,8 +41,9 @@ async def get_stats(
     db: Session = Depends(get_db)
 ):
     all_users = get_all_users(db, skip=0, limit=1000)
+    all_products = get_all_products(db, skip=0, limit=1000)
     return {
-        "total_products": len(fake_products_db),
+        "total_products": len(all_products),
         "total_users": len(all_users),
         "total_orders": 0,
         "requested_by": admin_user.email
