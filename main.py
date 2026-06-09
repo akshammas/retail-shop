@@ -6,9 +6,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.routers import products, users, orders
 from app.routers import auth
 from app.core.config import settings
-from app.core.security import create_access_token, verify_token
 from app.dependencies import require_admin
-from app.database import fake_users_db, fake_products_db
+from app.db.database import get_db
+from app.db.crud.user import get_all_users
+from sqlalchemy.orm import Session
+from app.database import fake_products_db
 
 app = FastAPI(
     title=settings.app_name,
@@ -35,12 +37,16 @@ async def read_root():
 
 
 @app.get("/admin/stats")
-async def get_stats(admin_user: dict = Depends(require_admin)):
+async def get_stats(
+    admin_user=Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    all_users = get_all_users(db, skip=0, limit=1000)
     return {
         "total_products": len(fake_products_db),
-        "total_users": len(fake_users_db),
+        "total_users": len(all_users),
         "total_orders": 0,
-        "requested_by": admin_user["email"]
+        "requested_by": admin_user.email
     }
 
 
