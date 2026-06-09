@@ -1,10 +1,13 @@
 # app/dependencies.py
 
-from fastapi import Depends, HTTPException, Header, status
+from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
+from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.security import verify_token
-from app.database import fake_users_db
+from app.db.database import get_db
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
 def get_pagination(skip: int = 0, limit: int = 10):
@@ -13,12 +16,10 @@ def get_pagination(skip: int = 0, limit: int = 10):
     return {"skip": skip, "limit": limit}
 
 
-
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
-
-
-def get_current_user(token: str = Depends(oauth2_scheme)):
+def get_current_user(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db)
+):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -33,7 +34,10 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
         raise credentials_exception
 
     user_id = payload.get("user_id")
-    user = fake_users_db.get(user_id)
+
+    # get user from real PostgreSQL db
+    from app.db.crud.user import get_user_by_id
+    user = get_user_by_id(db, user_id)
 
     if user is None:
         raise credentials_exception
@@ -41,9 +45,8 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
     return user
 
 
-# ── Admin dependency ────────────────────────────────
-def require_admin(current_user: dict = Depends(get_current_user)):
-    if current_user["role"] != "admin":
+def require_admin(current_user=Depends(get_current_user)):
+    if current_user.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"
