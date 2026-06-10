@@ -6,11 +6,11 @@ from typing import Optional
 
 class Product(BaseModel):
     name: str
-    price: float = Field(gt=0, description="Must be greater than 0")
+    price: float = Field(gt=0)
     description: Optional[str] = None
     in_stock: bool = True
-    quantity: int = Field(ge=0, description="Must be 0 or more")
-    category: str = Field(default="general")
+    quantity: int = Field(ge=0)
+    category_id: Optional[int] = None  # ← replaced category string
 
 
 class ProductUpdate(BaseModel):
@@ -19,9 +19,16 @@ class ProductUpdate(BaseModel):
     description: Optional[str] = None
     in_stock: Optional[bool] = None
     quantity: Optional[int] = Field(default=None, ge=0)
-    category: Optional[str] = None
+    category_id: Optional[int] = None
 
 
-class ProductResponse(Product):
+class ProductResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
+
     id: int
+    name: str
+    price: float
+    description: Optional[str] = None
+    in_stock: bool
+    quantity: int
+    category_id: Optional[int] = None

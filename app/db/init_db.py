@@ -3,6 +3,7 @@
 from app.db.database import engine, Base, SessionLocal
 from app import models
 from app.db.crud.product import seed_products
+from app.db.crud.category import seed_categories
 
 
 def create_tables():
@@ -14,6 +15,7 @@ def create_tables():
 def seed():
     db = SessionLocal()
     try:
+        seed_categories(db)
         seed_products(db)
     finally:
         db.close()
