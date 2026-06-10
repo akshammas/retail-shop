@@ -2,7 +2,7 @@
 
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import products, users, orders, categories
+from app.routers import products, users, orders, categories, addresses
 from app.routers import auth
 from app.core.config import settings
 from app.dependencies import require_admin
@@ -55,3 +55,5 @@ app.include_router(products.router, prefix="/products", tags=["Products"])
 app.include_router(users.router, prefix="/users", tags=["Users"])
 app.include_router(orders.router, prefix="/orders", tags=["Orders"])
 app.include_router(categories.router, prefix="/categories", tags=["Categories"])
+
+app.include_router(addresses.router, prefix="/addresses", tags=["Addresses"])

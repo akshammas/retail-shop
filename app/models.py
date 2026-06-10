@@ -33,6 +33,7 @@ class User(Base):
     # relationships
     orders = relationship("Order", back_populates="user")
     cart_items = relationship("CartItem", back_populates="user")
+    addresses = relationship("Address", back_populates="user")
 
 
 class Category(Base):
@@ -111,3 +112,22 @@ class CartItem(Base):
     # relationships
     user = relationship("User", back_populates="cart_items")
     product = relationship("Product", back_populates="cart_items")
+
+
+class Address(Base):
+    __tablename__ = "addresses"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    full_name = Column(String, nullable=False)
+    phone = Column(String, nullable=False)
+    street = Column(String, nullable=False)
+    city = Column(String, nullable=False)
+    state = Column(String, nullable=False)
+    pincode = Column(String, nullable=False)
+    is_default = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # relationship
+    user = relationship("User", back_populates="addresses")
+
