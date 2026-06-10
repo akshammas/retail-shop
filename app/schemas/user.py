@@ -8,6 +8,7 @@ class UserCreate(BaseModel):
     name: str
     email: str
     password: str
+    phone_number: Optional[str] = None
 
 
 class UserLogin(BaseModel):
@@ -19,6 +20,7 @@ class UserUpdate(BaseModel):
     name: Optional[str] = None
     email: Optional[str] = None
     password: Optional[str] = None
+    phone_number: Optional[str] = None
 
 
 class UserResponse(BaseModel):
@@ -28,6 +30,7 @@ class UserResponse(BaseModel):
     name: str
     email: str
     role: str = "customer"
+    phone_number: Optional[str] = None
 
 
 class TokenResponse(BaseModel):

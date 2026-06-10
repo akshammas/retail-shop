@@ -20,14 +20,15 @@ def get_all_users(db: Session, skip: int = 0, limit: int = 10):
     return db.query(User).offset(skip).limit(limit).all()
 
 
-def create_user(db: Session, name: str, email: str, password: str, role: str = "customer"):
+def create_user(db: Session, name: str, email: str, password: str, role: str = "customer", phone_number: str = None ):
     """Create a new user"""
     hashed = hash_password(password)
     new_user = User(
         name=name,
         email=email,
         password=hashed,
-        role=role
+        role=role,
+        phone_number=phone_number
     )
     db.add(new_user)
     db.commit()

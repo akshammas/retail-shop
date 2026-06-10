@@ -41,7 +41,8 @@ async def signup(user: UserCreate, db: Session = Depends(get_db)):
         name=user.name,
         email=user.email,
         password=user.password,
-        role="customer"
+        role="customer",
+        phone_number=user.phone_number
     )
 
     token_data = {"user_id": new_user.id, "role": new_user.role}
@@ -73,7 +74,8 @@ async def signup_admin(user: UserCreate, db: Session = Depends(get_db)):
         name=user.name,
         email=user.email,
         password=user.password,
-        role="admin"
+        role="admin",
+        phone_number=user.phone_number
     )
 
     token_data = {"user_id": new_user.id, "role": new_user.role}
