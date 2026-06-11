@@ -1,7 +1,7 @@
 # app/schemas/product.py
 
 from pydantic import BaseModel, Field, ConfigDict
-from typing import Optional
+from typing import Optional, List
 
 
 class Product(BaseModel):
@@ -10,7 +10,7 @@ class Product(BaseModel):
     description: Optional[str] = None
     in_stock: bool = True
     quantity: int = Field(ge=0)
-    category_id: Optional[int] = None  # ← replaced category string
+    category_id: Optional[int] = None
 
 
 class ProductUpdate(BaseModel):
@@ -20,6 +20,15 @@ class ProductUpdate(BaseModel):
     in_stock: Optional[bool] = None
     quantity: Optional[int] = Field(default=None, ge=0)
     category_id: Optional[int] = None
+
+
+class ProductImageResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    product_id: int
+    image_url: str
+    is_primary: bool
 
 
 class ProductResponse(BaseModel):
@@ -32,3 +41,4 @@ class ProductResponse(BaseModel):
     in_stock: bool
     quantity: int
     category_id: Optional[int] = None
+    images: List[ProductImageResponse] = []  # ← list of images

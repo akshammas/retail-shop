@@ -1,13 +1,16 @@
 # app/dependencies.py
 
 from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import OAuth2PasswordBearer, HTTPBearer
 from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.security import verify_token
 from app.db.database import get_db
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+
+# add this for swagger
+bearer_scheme = HTTPBearer()
 
 
 def get_pagination(skip: int = 0, limit: int = 10):

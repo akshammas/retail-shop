@@ -10,6 +10,9 @@ from app.db.database import get_db
 from app.db.crud.user import get_all_users
 from app.db.crud.product import get_all_products
 from sqlalchemy.orm import Session
+from fastapi.staticfiles import StaticFiles
+import os
+
 
 app = FastAPI(
     title=settings.app_name,
@@ -48,6 +51,10 @@ async def get_stats(
         "total_orders": 0,
         "requested_by": admin_user.email
     }
+
+
+os.makedirs("static/images/products", exist_ok=True)
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 app.include_router(auth.router, prefix="/auth", tags=["Auth"])

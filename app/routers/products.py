@@ -1,9 +1,11 @@
 # app/routers/products.py
 
-from typing import Optional
-from fastapi import APIRouter, HTTPException, status, Depends
+
+
+from typing import Optional, List
+from fastapi import APIRouter, HTTPException, status, Depends, UploadFile, File
 from sqlalchemy.orm import Session
-from app.schemas.product import Product, ProductUpdate, ProductResponse
+from app.schemas.product import Product, ProductUpdate, ProductResponse, ProductImageResponse
 from app.dependencies import get_pagination, get_current_user, require_admin
 from app.db.database import get_db
 from app.db.crud.product import (
@@ -14,6 +16,19 @@ from app.db.crud.product import (
     update_product,
     delete_product
 )
+import os
+import uuid
+from app.db.crud.image import (
+    get_images_by_product,
+    add_image,
+    set_primary_image,
+    delete_image,
+    delete_all_product_images
+)
+
+UPLOAD_DIR = "static/images/products"
+ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"]
+MAX_SIZE_MB = 5
 
 router = APIRouter()
 
@@ -100,3 +115,103 @@ async def delete_existing_product(
         "deleted_by": admin_user.email,
         "product": deleted.name
     }
+
+
+# ── Image routes ────────────────────────────────────
+
+
+@router.get("/{product_id}/images", response_model=List[ProductImageResponse])
+async def get_product_images(
+    product_id: int,
+    db: Session = Depends(get_db)
+):
+    product = get_product_by_id(db, product_id)
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    return get_images_by_product(db, product_id)
+
+
+@router.post("/{product_id}/images", response_model=ProductImageResponse, status_code=status.HTTP_201_CREATED)
+async def upload_product_image(
+    product_id: int,
+    file: UploadFile = File(...),
+    is_primary: bool = False,
+    admin_user=Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    # check product exists
+    product = get_product_by_id(db, product_id)
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    # check file type
+    if file.content_type not in ALLOWED_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail="Only JPEG, PNG and WebP images allowed"
+        )
+
+    # check file size
+    contents = await file.read()
+    size_mb = len(contents) / (1024 * 1024)
+    if size_mb > MAX_SIZE_MB:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File too large. Max {MAX_SIZE_MB}MB allowed"
+        )
+
+    # generate unique filename
+    extension = file.filename.split(".")[-1].lower()
+    filename = f"product_{product_id}_{uuid.uuid4().hex[:8]}.{extension}"
+    filepath = os.path.join(UPLOAD_DIR, filename)
+
+    # save to disk
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    with open(filepath, "wb") as f:
+        f.write(contents)
+
+    # save to database
+    image_url = f"/static/images/products/{filename}"
+    image = add_image(db, product_id, image_url, is_primary)
+
+    return image
+
+
+@router.patch("/{product_id}/images/{image_id}/set-primary", response_model=ProductImageResponse)
+async def set_image_as_primary(
+    product_id: int,
+    image_id: int,
+    admin_user=Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    image = set_primary_image(db, image_id, product_id)
+    if not image:
+        raise HTTPException(status_code=404, detail="Image not found")
+    return image
+
+
+@router.delete("/{product_id}/images/{image_id}")
+async def delete_single_image(
+    product_id: int,
+    image_id: int,
+    admin_user=Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    image = delete_image(db, image_id)
+    if not image:
+        raise HTTPException(status_code=404, detail="Image not found")
+    return {"message": "Image deleted successfully"}
+
+
+@router.delete("/{product_id}/images")
+async def delete_all_images(
+    product_id: int,
+    admin_user=Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    product = get_product_by_id(db, product_id)
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    delete_all_product_images(db, product_id)
+    return {"message": "All images deleted"}
+
