@@ -2,12 +2,21 @@
 
 from sqlalchemy.orm import Session
 from app.models import Product
+from sqlalchemy.orm import Session, joinedload, selectinload
+
 
 
 def get_product_by_id(db: Session, product_id: int):
-    """Get single product by id"""
-    return db.query(Product).filter(Product.id == product_id).first()
-
+    """Get single product with category and images loaded"""
+    return (
+        db.query(Product)
+        .options(
+            joinedload(Product.category_rel),  # load category in same query
+            selectinload(Product.images)        # load images efficiently
+        )
+        .filter(Product.id == product_id)
+        .first()
+    )
 
 def get_all_products(
     db: Session,
@@ -17,31 +26,40 @@ def get_all_products(
     search: str = None,
     in_stock: bool = None
 ):
-    """Get all products with optional filters"""
-    query = db.query(Product)
+    """Get all products with category and images preloaded"""
+    query = (
+        db.query(Product)
+        .options(
+            joinedload(Product.category_rel),  # ← fixes N+1 for category
+            selectinload(Product.images)        # ← fixes N+1 for images
+        )
+    )
 
-    # filter by category
     if category:
         query = query.filter(Product.category.ilike(f"%{category}%"))
 
-    # filter by search term in name or description
     if search:
         query = query.filter(
             Product.name.ilike(f"%{search}%") |
             Product.description.ilike(f"%{search}%")
         )
 
-    # filter by stock status
     if in_stock is not None:
         query = query.filter(Product.in_stock == in_stock)
 
     return query.offset(skip).limit(limit).all()
 
-
 def get_featured_products(db: Session, limit: int = 3):
-    """Get in-stock products for featured section"""
-    return db.query(Product).filter(Product.in_stock == True).limit(limit).all()
-
+    return (
+        db.query(Product)
+        .options(
+            joinedload(Product.category_rel),
+            selectinload(Product.images)
+        )
+        .filter(Product.in_stock == True)
+        .limit(limit)
+        .all()
+    )
 
 def create_product(db: Session, product_data: dict):
     """Create a new product"""

@@ -6,9 +6,10 @@ from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
 
 # create the engine — this is the connection to PostgreSQL
+# app/db/database.py
 engine = create_engine(
     settings.database_url,
-    echo=True  # logs all SQL queries — useful for learning, turn off in production
+    echo=settings.debug  # only log SQL when debug=True
 )
 
 # each request gets its own session

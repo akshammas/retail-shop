@@ -1,12 +1,50 @@
-# app/db/crud/order.py
+# app/db/crud/order.py — update get functions
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload, joinedload
 from app.models import Order, OrderItem, Product
 
 
-def create_order(db: Session, user_id: int, shipping_address: str, items: list):
-    """Create an order with items"""
+def get_order_by_id(db: Session, order_id: int):
+    """Get order with all items preloaded"""
+    return (
+        db.query(Order)
+        .options(
+            selectinload(Order.items)  # load all order items in one query
+            .joinedload(OrderItem.product)  # load product for each item
+        )
+        .filter(Order.id == order_id)
+        .first()
+    )
 
+
+def get_orders_by_user(db: Session, user_id: int):
+    """Get all user orders with items preloaded"""
+    return (
+        db.query(Order)
+        .options(
+            selectinload(Order.items)
+            .joinedload(OrderItem.product)
+        )
+        .filter(Order.user_id == user_id)
+        .all()
+    )
+
+
+def get_all_orders(db: Session, skip: int = 0, limit: int = 10):
+    """Get all orders with items preloaded"""
+    return (
+        db.query(Order)
+        .options(
+            selectinload(Order.items)
+            .joinedload(OrderItem.product)
+        )
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
+def create_order(db: Session, user_id: int, shipping_address: str, items: list):
     total = 0.0
     order_items = []
 
@@ -17,7 +55,6 @@ def create_order(db: Session, user_id: int, shipping_address: str, items: list):
         if product.quantity < item.quantity:
             return None, f"Not enough stock for {product.name}"
 
-        # snapshot price at time of purchase
         item_total = product.price * item.quantity
         total += item_total
 
@@ -27,21 +64,18 @@ def create_order(db: Session, user_id: int, shipping_address: str, items: list):
             "price_at_purchase": product.price
         })
 
-        # reduce stock
         product.quantity -= item.quantity
         if product.quantity == 0:
             product.in_stock = False
 
-    # create order
     new_order = Order(
         user_id=user_id,
         shipping_address=shipping_address,
         total_amount=round(total, 2)
     )
     db.add(new_order)
-    db.flush()  # get order id without committing
+    db.flush()
 
-    # create order items
     for item_data in order_items:
         order_item = OrderItem(order_id=new_order.id, **item_data)
         db.add(order_item)
@@ -49,18 +83,6 @@ def create_order(db: Session, user_id: int, shipping_address: str, items: list):
     db.commit()
     db.refresh(new_order)
     return new_order, None
-
-
-def get_order_by_id(db: Session, order_id: int):
-    return db.query(Order).filter(Order.id == order_id).first()
-
-
-def get_orders_by_user(db: Session, user_id: int):
-    return db.query(Order).filter(Order.user_id == user_id).all()
-
-
-def get_all_orders(db: Session, skip: int = 0, limit: int = 10):
-    return db.query(Order).offset(skip).limit(limit).all()
 
 
 def update_order_status(db: Session, order_id: int, status: str):
