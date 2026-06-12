@@ -1,7 +1,7 @@
 # app/db/crud/product.py
 
 from sqlalchemy.orm import Session
-from app.models import Product
+from app.models import Product,Category
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 
@@ -36,7 +36,7 @@ def get_all_products(
     )
 
     if category:
-        query = query.filter(Product.category.ilike(f"%{category}%"))
+        query = query.filter(Product.category_id == category)
 
     if search:
         query = query.filter(

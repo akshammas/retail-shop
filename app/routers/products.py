@@ -33,7 +33,7 @@ async def get_featured(db: Session = Depends(get_db)):
 
 @router.get("/", response_model=List[ProductResponse])
 async def list_products(
-    category: Optional[str] = None,
+    category: Optional[int] = None,
     search: Optional[str] = None,
     in_stock: Optional[bool] = None,
     pagination: dict = Depends(get_pagination),
