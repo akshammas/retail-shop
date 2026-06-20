@@ -11,9 +11,9 @@ from app.db.crud.image import (
     add_image,
     set_primary_image,
     delete_image,
-    delete_all_product_images
+    delete_all_product_images,
 )
-from app.db.crud.product import get_product_by_id
+from app.db.crud.product import get_product_by_id,get_related_products
 from app import services
 import app.services.product_service as product_service
 import os
@@ -60,6 +60,12 @@ async def list_products(
         limit=pagination["limit"]
     )
 
+@router.get("/{product_id}/related", response_model=list[ProductResponse])
+async def get_related(product_id: int, db: Session = Depends(get_db)):
+    product = get_product_by_id(db, product_id)
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    return get_related_products(db, product.category_id, exclude_id=product_id)
 
 @router.get("/{product_id}", response_model=ProductResponse)
 async def get_product(product_id: int, db: Session = Depends(get_db)):

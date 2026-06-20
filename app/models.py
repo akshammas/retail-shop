@@ -49,6 +49,8 @@ class Category(Base):
 
 
 # ── Product Model ───────────────────────────────────
+# app/models.py — Product class
+
 class Product(Base):
     __tablename__ = "products"
 
@@ -58,15 +60,17 @@ class Product(Base):
     description = Column(String, nullable=True)
     in_stock = Column(Boolean, default=True)
     quantity = Column(Integer, default=0)
-    category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)  # ← real FK
+    category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
+    brand = Column(String, nullable=True)              # ← new
+    available_sizes = Column(String, nullable=True)    # ← new, comma-separated: "S,M,L,XL"
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    # relationships
     category_rel = relationship("Category", back_populates="products")
     order_items = relationship("OrderItem", back_populates="product")
     cart_items = relationship("CartItem", back_populates="product")
     images = relationship("ProductImage", back_populates="product", cascade="all, delete-orphan")
+
 
 # ── Order Model ─────────────────────────────────────
 class Order(Base):

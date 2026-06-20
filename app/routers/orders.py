@@ -3,7 +3,7 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from sqlalchemy.orm import Session
 from app.schemas.order import OrderCreate, OrderResponse
-from app.schemas.cart import CartItemAdd, CartItemResponse
+from app.schemas.cart import CartItemAdd, CartItemResponse,CartItemUpdate
 from app.dependencies import get_current_user, require_admin
 from app.db.database import get_db
 import app.services.order_service as order_service
@@ -21,10 +21,7 @@ class CheckoutRequest(BaseModel):
 # ── Cart routes ─────────────────────────────────────
 
 @router.get("/cart", response_model=List[CartItemResponse])
-async def view_cart(
-    current_user=Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
+async def view_cart(current_user=Depends(get_current_user), db: Session = Depends(get_db)):
     return cart_service.get_cart(db, current_user.id)
 
 
@@ -35,6 +32,16 @@ async def add_item_to_cart(
     db: Session = Depends(get_db)
 ):
     return cart_service.add_item(db, current_user.id, item.product_id, item.quantity)
+
+
+@router.put("/cart/{cart_item_id}", response_model=CartItemResponse)
+async def update_cart_item(
+    cart_item_id: int,
+    body: CartItemUpdate,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    return cart_service.update_quantity(db, current_user.id, cart_item_id, body.quantity)
 
 
 @router.delete("/cart/{cart_item_id}")
@@ -48,13 +55,9 @@ async def remove_cart_item(
 
 
 @router.delete("/cart")
-async def clear_my_cart(
-    current_user=Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
+async def clear_my_cart(current_user=Depends(get_current_user), db: Session = Depends(get_db)):
     cart_service.clear(db, current_user.id)
     return {"message": "Cart cleared"}
-
 
 # ── Checkout from cart ──────────────────────────────
 

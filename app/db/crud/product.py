@@ -115,6 +115,16 @@ def count_products(
 
     return query.count()
 
+def get_related_products(db: Session, category_id: int, exclude_id: int, limit: int = 8):
+    if not category_id:
+        return []
+    return (
+        db.query(Product)
+        .options(joinedload(Product.category_rel), selectinload(Product.images))
+        .filter(Product.category_id == category_id, Product.id != exclude_id, Product.in_stock == True)
+        .limit(limit)
+        .all()
+    )
 
 def seed_products(db: Session):
     """Add initial products if table is empty"""

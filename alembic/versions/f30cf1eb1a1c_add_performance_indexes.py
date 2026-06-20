@@ -1,35 +1,31 @@
-# alembic/versions/xxxx_add_performance_indexes.py
+"""add performance indexes
 
+Revision ID: f30cf1eb1a1c
+Revises: 2f2bab7429ac
+Create Date: 2026-06-11 17:23:00.000000
+
+"""
+from typing import Union, Sequence
 from alembic import op
 import sqlalchemy as sa
 
 
+# revision identifiers, used by Alembic.
+revision: str = 'f30cf1eb1a1c'
+down_revision: Union[str, Sequence[str], None] = '2f2bab7429ac'
+branch_labels: Union[str, Sequence[str], None] = None
+depends_on: Union[str, Sequence[str], None] = None
+
+
 def upgrade() -> None:
-    # orders — fast lookup by user
     op.create_index('ix_orders_user_id', 'orders', ['user_id'])
-
-    # orders — fast filter by status
     op.create_index('ix_orders_status', 'orders', ['status'])
-
-    # order_items — fast lookup by order
     op.create_index('ix_order_items_order_id', 'order_items', ['order_id'])
-
-    # order_items — fast lookup by product
     op.create_index('ix_order_items_product_id', 'order_items', ['product_id'])
-
-    # cart_items — fast lookup by user
     op.create_index('ix_cart_items_user_id', 'cart_items', ['user_id'])
-
-    # addresses — fast lookup by user
     op.create_index('ix_addresses_user_id', 'addresses', ['user_id'])
-
-    # product_images — fast lookup by product
     op.create_index('ix_product_images_product_id', 'product_images', ['product_id'])
-
-    # products — fast filter by in_stock
     op.create_index('ix_products_in_stock', 'products', ['in_stock'])
-
-    # composite index — category + in_stock filter together
     op.create_index('ix_products_category_stock', 'products', ['category_id', 'in_stock'])
 
 

@@ -11,6 +11,8 @@ class Product(BaseModel):
     in_stock: bool = True
     quantity: int = Field(ge=0)
     category_id: Optional[int] = None
+    brand: Optional[str] = None
+    available_sizes: Optional[str] = None   # "S,M,L,XL"
 
 
 class ProductUpdate(BaseModel):
@@ -20,11 +22,12 @@ class ProductUpdate(BaseModel):
     in_stock: Optional[bool] = None
     quantity: Optional[int] = Field(default=None, ge=0)
     category_id: Optional[int] = None
+    brand: Optional[str] = None
+    available_sizes: Optional[str] = None
 
 
 class ProductImageResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-
     id: int
     product_id: int
     image_url: str
@@ -41,4 +44,6 @@ class ProductResponse(BaseModel):
     in_stock: bool
     quantity: int
     category_id: Optional[int] = None
-    images: List[ProductImageResponse] = []  # ← list of images
+    brand: Optional[str] = None
+    available_sizes: Optional[str] = None
+    images: List[ProductImageResponse] = []
