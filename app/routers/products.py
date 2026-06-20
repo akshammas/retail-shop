@@ -18,6 +18,7 @@ from app import services
 import app.services.product_service as product_service
 import os
 import uuid
+from app.db.crud.product import count_products
 
 router = APIRouter()
 
@@ -29,6 +30,17 @@ MAX_SIZE_MB = 5
 @router.get("/featured", response_model=List[ProductResponse])
 async def get_featured(db: Session = Depends(get_db)):
     return product_service.get_featured(db)
+
+@router.get("/count")
+async def get_products_count(
+    category: Optional[int] = None,
+    search: Optional[str] = None,
+    in_stock: Optional[bool] = None,
+    db: Session = Depends(get_db)
+):
+    total = count_products(db, category=category, search=search, in_stock=in_stock)
+    return {"total": total}
+
 
 
 @router.get("/", response_model=List[ProductResponse])

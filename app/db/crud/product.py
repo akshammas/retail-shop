@@ -91,6 +91,30 @@ def delete_product(db: Session, product_id: int):
     db.commit()
     return product
 
+# app/db/crud/product.py — add this function
+
+def count_products(
+    db: Session,
+    category: int = None,
+    search: str = None,
+    in_stock: bool = None
+):
+    query = db.query(Product)
+
+    if category:
+        query = query.filter(Product.category_id == category)
+
+    if search:
+        query = query.filter(
+            Product.name.ilike(f"%{search}%") |
+            Product.description.ilike(f"%{search}%")
+        )
+
+    if in_stock is not None:
+        query = query.filter(Product.in_stock == in_stock)
+
+    return query.count()
+
 
 def seed_products(db: Session):
     """Add initial products if table is empty"""
