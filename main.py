@@ -2,7 +2,7 @@
 
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import products, users, orders, categories, addresses
+from app.routers import products, users, orders, categories, addresses,wishlist
 from app.routers import auth
 from app.core.config import settings
 from app.dependencies import require_admin
@@ -11,6 +11,7 @@ from app.db.crud.user import get_all_users
 from app.db.crud.product import get_all_products
 from sqlalchemy.orm import Session
 from fastapi.staticfiles import StaticFiles
+
 import os
 
 
@@ -64,3 +65,4 @@ app.include_router(orders.router, prefix="/orders", tags=["Orders"])
 app.include_router(categories.router, prefix="/categories", tags=["Categories"])
 
 app.include_router(addresses.router, prefix="/addresses", tags=["Addresses"])
+app.include_router(wishlist.router, prefix="/wishlist", tags=["Wishlist"])
