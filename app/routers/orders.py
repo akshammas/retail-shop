@@ -10,6 +10,7 @@ import app.services.order_service as order_service
 import app.services.cart_service as cart_service
 from typing import List
 from pydantic import BaseModel
+from app.schemas.order import BuyNowRequest
 
 router = APIRouter()
 
@@ -123,3 +124,19 @@ async def update_status(
 ):
     order = order_service.change_status(db, order_id, status)
     return {"message": f"Order {order_id} status updated to {status}"}
+
+
+
+@router.post("/buy-now", response_model=OrderResponse, status_code=status.HTTP_201_CREATED)
+async def buy_now_checkout(
+    body: BuyNowRequest,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Order specific items directly, bypassing the cart entirely."""
+    return order_service.place_order_direct(
+        db=db,
+        user_id=current_user.id,
+        shipping_address=body.shipping_address,
+        items=body.items,
+    )

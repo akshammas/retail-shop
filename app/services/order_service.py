@@ -84,3 +84,15 @@ def change_status(db: Session, order_id: int, new_status: str):
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
     return order
+
+def place_order_direct(db: Session, user_id: int, shipping_address: str, items: list):
+    """Place an order from an explicit item list — does NOT touch the cart at all."""
+    new_order, error = create_order(
+        db=db,
+        user_id=user_id,
+        shipping_address=shipping_address,
+        items=items,
+    )
+    if error:
+        raise HTTPException(status_code=400, detail=error)
+    return new_order

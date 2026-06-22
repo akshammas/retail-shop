@@ -33,3 +33,7 @@ class OrderResponse(BaseModel):
     total_amount: float
     shipping_address: Optional[str] = None
     items: List[OrderItemResponse] = []
+
+class BuyNowRequest(BaseModel):
+    shipping_address: str
+    items: List[OrderItemCreate] 
