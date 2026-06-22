@@ -2,6 +2,7 @@
 
 from sqlalchemy.orm import Session, selectinload, joinedload
 from app.models import Order, OrderItem, Product
+from datetime import datetime, timezone
 
 
 def get_order_by_id(db: Session, order_id: int):
@@ -44,6 +45,20 @@ def get_all_orders(db: Session, skip: int = 0, limit: int = 10):
     )
 
 
+def get_effective_price(product: Product) -> float:
+    """The price actually charged — accounts for active discount."""
+    if not product.discount_percent:
+        return product.price
+
+    now = datetime.now(timezone.utc)
+    if product.discount_starts_at and now < product.discount_starts_at:
+        return product.price
+    if product.discount_ends_at and now > product.discount_ends_at:
+        return product.price
+
+    return round(product.price * (1 - product.discount_percent / 100), 2)
+
+
 def create_order(db: Session, user_id: int, shipping_address: str, items: list):
     total = 0.0
     order_items = []
@@ -55,13 +70,14 @@ def create_order(db: Session, user_id: int, shipping_address: str, items: list):
         if product.quantity < item.quantity:
             return None, f"Not enough stock for {product.name}"
 
-        item_total = product.price * item.quantity
+        effective_price = get_effective_price(product)   # ← uses discount if active
+        item_total = effective_price * item.quantity
         total += item_total
 
         order_items.append({
             "product_id": product.id,
             "quantity": item.quantity,
-            "price_at_purchase": product.price
+            "price_at_purchase": effective_price,   # ← snapshot is now the real charged price
         })
 
         product.quantity -= item.quantity
@@ -83,7 +99,6 @@ def create_order(db: Session, user_id: int, shipping_address: str, items: list):
     db.commit()
     db.refresh(new_order)
     return new_order, None
-
 
 def update_order_status(db: Session, order_id: int, status: str):
     order = get_order_by_id(db, order_id)

@@ -1,7 +1,8 @@
 # app/schemas/product.py
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, computed_field
 from typing import Optional, List
+from datetime import datetime, timezone
 
 
 class Product(BaseModel):
@@ -12,7 +13,10 @@ class Product(BaseModel):
     quantity: int = Field(ge=0)
     category_id: Optional[int] = None
     brand: Optional[str] = None
-    available_sizes: Optional[str] = None   # "S,M,L,XL"
+    available_sizes: Optional[str] = None
+    discount_percent: Optional[int] = Field(default=None, ge=1, le=90)
+    discount_starts_at: Optional[datetime] = None
+    discount_ends_at: Optional[datetime] = None
 
 
 class ProductUpdate(BaseModel):
@@ -24,6 +28,9 @@ class ProductUpdate(BaseModel):
     category_id: Optional[int] = None
     brand: Optional[str] = None
     available_sizes: Optional[str] = None
+    discount_percent: Optional[int] = Field(default=None, ge=1, le=90)
+    discount_starts_at: Optional[datetime] = None
+    discount_ends_at: Optional[datetime] = None
 
 
 class ProductImageResponse(BaseModel):
@@ -46,4 +53,26 @@ class ProductResponse(BaseModel):
     category_id: Optional[int] = None
     brand: Optional[str] = None
     available_sizes: Optional[str] = None
+    discount_percent: Optional[int] = None
+    discount_starts_at: Optional[datetime] = None
+    discount_ends_at: Optional[datetime] = None
     images: List[ProductImageResponse] = []
+
+    @computed_field
+    @property
+    def is_on_sale(self) -> bool:
+        if not self.discount_percent:
+            return False
+        now = datetime.now(timezone.utc)
+        if self.discount_starts_at and now < self.discount_starts_at:
+            return False
+        if self.discount_ends_at and now > self.discount_ends_at:
+            return False
+        return True
+
+    @computed_field
+    @property
+    def discounted_price(self) -> float:
+        if self.is_on_sale:
+            return round(self.price * (1 - self.discount_percent / 100), 2)
+        return self.price

@@ -61,8 +61,11 @@ class Product(Base):
     in_stock = Column(Boolean, default=True)
     quantity = Column(Integer, default=0)
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
-    brand = Column(String, nullable=True)              # ← new
-    available_sizes = Column(String, nullable=True)    # ← new, comma-separated: "S,M,L,XL"
+    brand = Column(String, nullable=True)
+    available_sizes = Column(String, nullable=True)
+    discount_percent = Column(Integer, nullable=True)       # ← new, e.g. 20 means 20% off
+    discount_starts_at = Column(DateTime(timezone=True), nullable=True)  # ← new
+    discount_ends_at = Column(DateTime(timezone=True), nullable=True)    # ← new
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
@@ -70,7 +73,6 @@ class Product(Base):
     order_items = relationship("OrderItem", back_populates="product")
     cart_items = relationship("CartItem", back_populates="product")
     images = relationship("ProductImage", back_populates="product", cascade="all, delete-orphan")
-
 
 # ── Order Model ─────────────────────────────────────
 class Order(Base):
