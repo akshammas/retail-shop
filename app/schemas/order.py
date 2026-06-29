@@ -31,13 +31,21 @@ class BuyNowRequest(BaseModel):
     items: List[OrderItemCreate]
 
 
+class OrderUserSummary(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    name: str
+    email: str
+
+
 class OrderResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
     user_id: int
+    user: Optional[OrderUserSummary] = None   # ← new
     status: str
     total_amount: float
     shipping_address: Optional[str] = None
-    created_at: Optional[datetime] = None   # ← was `str`, now correctly `datetime`
+    created_at: Optional[datetime] = None
     items: List[OrderItemResponse] = []

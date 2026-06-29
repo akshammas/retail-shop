@@ -70,8 +70,8 @@ def get_one(db: Session, order_id: int, user_id: int, is_admin: bool = False):
     return order
 
 
-def get_all(db: Session, skip: int = 0, limit: int = 10):
-    return get_all_orders(db, skip=skip, limit=limit)
+def get_all(db: Session, skip: int = 0, limit: int = 10, status: str = None):
+    return get_all_orders(db, skip=skip, limit=limit, status=status)
 
 
 def change_status(db: Session, order_id: int, new_status: str):

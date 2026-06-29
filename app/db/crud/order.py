@@ -1,8 +1,9 @@
 # app/db/crud/order.py — update get functions
 
 from sqlalchemy.orm import Session, selectinload, joinedload
-from app.models import Order, OrderItem, Product
+from app.models import Order, OrderItem, Product,User
 from datetime import datetime, timezone
+
 
 
 def get_order_by_id(db: Session, order_id: int):
@@ -31,14 +32,21 @@ def get_orders_by_user(db: Session, user_id: int):
     )
 
 
-def get_all_orders(db: Session, skip: int = 0, limit: int = 10):
-    """Get all orders with items preloaded"""
-    return (
+
+
+def get_all_orders(db: Session, skip: int = 0, limit: int = 10, status: str = None):
+    query = (
         db.query(Order)
         .options(
-            selectinload(Order.items)
-            .joinedload(OrderItem.product)
+            joinedload(Order.user),
+            selectinload(Order.items).joinedload(OrderItem.product),
         )
+    )
+    if status:
+        query = query.filter(Order.status == status)
+    return (
+        query
+        .order_by(Order.created_at.desc())
         .offset(skip)
         .limit(limit)
         .all()

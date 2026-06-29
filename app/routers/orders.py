@@ -110,9 +110,10 @@ async def list_all_orders(
     admin_user=Depends(require_admin),
     db: Session = Depends(get_db),
     skip: int = 0,
-    limit: int = 10
+    limit: int = 20,
+    status: str = None,
 ):
-    return order_service.get_all(db, skip=skip, limit=limit)
+    return order_service.get_all(db, skip=skip, limit=limit, status=status)
 
 
 @router.put("/{order_id}/status")
